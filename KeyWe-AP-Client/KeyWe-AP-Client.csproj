@@ -49,7 +49,19 @@
     </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-        <Exec Command="copy &quot;$(TargetPath)&quot; &quot;D:\SteamLibrary\steamapps\common\KeyWe\BepInEx\plugins\KeyWe_AP_Client\$(TargetFileName)&quot;"/>
+        <Copy
+                SourceFiles="$(TargetPath)"
+                DestinationFiles="D:\SteamLibrary\steamapps\common\KeyWe\BepInEx\plugins\KeyWe_AP_Client\$(TargetFileName)" />
+        <MakeDir Directories="$(ProjectDir)Package\KeyWe_Archipelago" />
+        <Copy
+                SourceFiles="$(TargetPath)"
+                DestinationFolder="$(ProjectDir)Package\KeyWe_Archipelago"
+                OverwriteReadOnlyFiles="true" />
+        <Copy
+                SourceFiles="$(ProjectDir)README.md"
+                DestinationFolder="$(ProjectDir)Package"
+                OverwriteReadOnlyFiles="true" />
+        <Exec Command="powershell -Command &quot;Compress-Archive -Path '$(ProjectDir)Package\*' -DestinationPath '$(ProjectDir)xMcacutt-KeyWe_Archipelago.zip' -Force&quot;" />
     </Target>
 
 </Project>
