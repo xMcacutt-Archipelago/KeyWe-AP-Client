@@ -2,7 +2,7 @@
 
 This mod is a client side implementation for Archipelago.gg
 
-For the APWorld for KeyWe see [KeyWe APWorld](https://github.com/xMcacutt/Archipelago-KeyWe/releases/latest)(https://github.com/xMcacutt-Archipelago/Archipelago-KeyWe)])
+For the APWorld for KeyWe see [KeyWe APWorld](https://github.com/xMcacutt/Archipelago-KeyWe/releases/latest)
 
 ## Setup
 
