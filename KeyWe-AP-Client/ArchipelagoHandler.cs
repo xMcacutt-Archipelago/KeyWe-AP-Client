@@ -115,7 +115,7 @@ public class ArchipelagoHandler(string server, int port, string slot, string pas
             GameName,
             Slot,
             ItemsHandlingFlags.AllItems,
-            new Version(1, 0, 0),
+            new Version(6, 0, 0),
             [],
             password: Password
         ).Result;
