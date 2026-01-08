@@ -36,13 +36,15 @@ public class APConsole : MonoBehaviour
         { "random arms", "#ff00ff" }
     };
 
-    private static string _fontName = "BlackHanSans-Regular SDF"; // Run the game to print a list of fonts to console then select one
+    private static string
+        _fontName = "BlackHanSans-Regular SDF"; // Run the game to print a list of fonts to console then select one
+
     private static string _gameName = "KeyWe";
     private static KeyCode _logToggleKey = KeyCode.F7; // Reassign in Create if configurable
     private static KeyCode _historyToggleKey = KeyCode.F8; // Reassign in Create if configurable
     private static CursorLockMode _defaultCursorMode = CursorLockMode.None;
     private static bool _defaultCursorVisible = true;
-    
+
     // CONSOLE PARAMS
     private const float MessageHeight = 28f;
     private const float ConsoleHeight = 280f;
@@ -81,19 +83,24 @@ public class APConsole : MonoBehaviour
     private bool _showConsole = true;
 
     public static APConsole Instance { get; private set; }
-    
+
     public static void Create()
     {
         if (Instance != null)
             return;
-        Resources.FindObjectsOfTypeAll<TMP_FontAsset>().ForEachItem(x => Debug.Log(x.name)); 
+        Resources.FindObjectsOfTypeAll<TMP_FontAsset>().ForEachItem(x => Debug.Log(x.name));
         _font = Resources.FindObjectsOfTypeAll<TMP_FontAsset>().First(x => x.name == _fontName);
         var consoleObject = new GameObject("ArchipelagoConsoleUI");
         DontDestroyOnLoad(consoleObject);
         Instance = consoleObject.AddComponent<APConsole>();
         Instance.BuildUI();
         Instance.Log($"Welcome to {_gameName} Archipelago!");
-        Instance.Log($"Press {_logToggleKey.ToString()} to Toggle log and {_historyToggleKey.ToString()} to toggle history");
+        Instance.Log(
+            $"Press {_logToggleKey.ToString()} to Toggle log and {_historyToggleKey.ToString()} to toggle history");
+        // foreach (var word in KeywordColors.Keys)
+        // {
+        //     Instance.Log(word);
+        // }
     }
 
     private void Update()
@@ -314,6 +321,7 @@ public class APConsole : MonoBehaviour
             t.gameObject.SetActive(true);
             return t;
         }
+
         var go = new GameObject("LogText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
         var t2 = go.GetComponent<TextMeshProUGUI>();
         t2.fontSize = 19;
@@ -352,50 +360,151 @@ public class APConsole : MonoBehaviour
 
     private string Colorize(string input)
     {
-        if (string.IsNullOrEmpty(input) || KeywordColors.Count == 0)
+        if (string.IsNullOrEmpty(input))
             return input;
 
-        var sb = new StringBuilder(input.Length + 32);
-        int i = 0;
-
-        while (i < input.Length)
-        {
-            bool matched = false;
-
-            foreach (var kvp in KeywordColors)
-            {
-                var word = kvp.Key;
-                var color = kvp.Value;
-
-                if (string.IsNullOrEmpty(word))
-                    continue;
-
-                if (i + word.Length > input.Length)
-                    continue;
-
-                if (string.Compare(input, i, word, 0, word.Length, ignoreCase: true, CultureInfo.InvariantCulture) == 0)
-                {
-                    sb.Append("<color=").Append(color).Append('>');
-                    sb.Append(input, i, word.Length);
-                    sb.Append("</color>");
-
-                    i += word.Length;
-                    matched = true;
-                    break;
-                }
-            }
-
-            if (!matched)
-            {
-                sb.Append(input[i]);
-                i++;
-            }
-        }
-
-        return sb.ToString();
+        List<string> tokens = Tokenize(input);
+        ApplyMultiWordColoring(tokens);
+        ApplySingleWordColoring(tokens);
+        return string.Concat(tokens);
     }
 
-    private const bool LogToFile = true;
+    private List<string> Tokenize(string input)
+    {
+        var tokens = new List<string>();
+        var sb = new StringBuilder();
+
+        if (string.IsNullOrEmpty(input))
+            return tokens;
+
+        bool IsWordChar(char c) => char.IsLetterOrDigit(c) || c == '\'';
+        var lastWasWord = IsWordChar(input[0]);
+
+        foreach (var c in input)
+        {
+            var isWordChar = IsWordChar(c);
+            if (isWordChar != lastWasWord)
+            {
+                tokens.Add(sb.ToString());
+                sb.Clear();
+            }
+
+            sb.Append(c);
+            lastWasWord = isWordChar;
+        }
+
+        if (sb.Length > 0)
+            tokens.Add(sb.ToString());
+        return tokens;
+    }
+
+    private void ApplySingleWordColoring(List<string> tokens)
+    {
+        var singleKeys = KeywordColors
+            .Where(kvp => !kvp.Key.Contains(" "))
+            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+        for (var i = 0; i < tokens.Count; i++)
+        {
+            var token = tokens[i];
+
+            if (!IsWord(token))
+                continue;
+
+            var lower = token.ToLowerInvariant();
+
+            if (singleKeys.TryGetValue(lower, out var color))
+            {
+                tokens[i] = $"<color={color}>{token}</color>";
+            }
+        }
+    }
+
+    private void ApplyMultiWordColoring(List<string> tokens)
+    {
+        var multiKeys = KeywordColors
+            .Where(kvp => kvp.Key.Contains(" "))
+            .Select(kvp => new
+            {
+                Words = kvp.Key.Split([' '], StringSplitOptions.None),
+                Color = kvp.Value
+            })
+            .OrderByDescending(kvp => kvp.Words.Length)
+            .ToList();
+
+        if (multiKeys.Count == 0 || tokens.Count == 0)
+            return;
+
+        var wordIndices = new List<int>();
+        for (var i = 0; i < tokens.Count; i++)
+            if (IsWord(tokens[i]))
+                wordIndices.Add(i);
+
+        var wi = 0;
+        while (wi < wordIndices.Count)
+        {
+            var matchedAny = false;
+
+            foreach (var key in multiKeys)
+            {
+                var wordCount = key.Words.Length;
+                if (wi + wordCount > wordIndices.Count)
+                    continue;
+
+                var match = true;
+                for (var k = 0; k < wordCount; k++)
+                {
+                    var token = tokens[wordIndices[wi + k]];
+                    if (token.Equals(key.Words[k], StringComparison.InvariantCultureIgnoreCase))
+                        continue;
+                    match = false;
+                    break;
+                }
+
+                if (!match)
+                    continue;
+
+                var startTokenIndex = wordIndices[wi];
+                var endTokenIndex = wordIndices[wi + wordCount - 1];
+                var phraseText = string.Concat(tokens.Skip(startTokenIndex)
+                    .Take(endTokenIndex - startTokenIndex + 1));
+                tokens[startTokenIndex] = $"<color={key.Color}>{phraseText}</color>";
+                for (var t = startTokenIndex + 1; t <= endTokenIndex; t++)
+                    tokens[t] = string.Empty;
+                wi += wordCount;
+                matchedAny = true;
+                break;
+            }
+
+            if (!matchedAny)
+                wi++;
+        }
+    }
+
+    private bool IsWord(string token)
+    {
+        if (string.IsNullOrEmpty(token))
+            return false;
+        var hasLetterOrDigit = false;
+        for (var i = 0; i < token.Length; i++)
+        {
+            var c = token[i];
+            if (char.IsLetterOrDigit(c))
+            {
+                hasLetterOrDigit = true;
+                continue;
+            }
+
+            if (c != '\'' || i <= 0 || i >= token.Length - 1)
+                return false;
+            if (char.IsLetterOrDigit(token[i - 1]) && char.IsLetterOrDigit(token[i + 1]))
+                continue;
+            return false;
+        }
+
+        return hasLetterOrDigit;
+    }
+
 
     public void Log(string text)
     {

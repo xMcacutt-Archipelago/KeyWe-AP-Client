@@ -60,13 +60,30 @@ public class GameHandler : MonoBehaviour
         {
             if (!kiwi.IsLocalPlayer)
                 continue;
-            kiwi.Respawn(false);
+            Respawn(kiwi, false);
         }
+        SomeoneElseDied = false;
+    }
+    
+    public void Respawn(Kiwi kiwi, bool inWater)
+    {
+        kiwi.ShowRespawnEffect(inWater);
+        if (OnlineEventRelay.Instance.IsInRoom)
+            kiwi.photonView.RPC("Kiwi_Respawn_RPC", RpcTarget.Others, (object) inWater);
+        kiwi.ChangeState(CommonKiwi.StateID.Respawning);
     }
 
     public void EquipRandom(Customizables.Categories category)
     {
         var dataKeeper = SystemHandler.Get<DataKeeper>();
+        if (dataKeeper == null 
+            || Data.ExcludedLevels == null 
+            || Data.LevelNameToId == null 
+            || dataKeeper.CurrentLevelData == null)
+        {
+            APConsole.Instance.Log($"Failed to equip a cosmetic (this is a failsafe, don't panic)");
+            return;
+        }
         switch (dataKeeper.CurrentState)
         {
             case DataKeeper.State.InMatch when Data.ExcludedLevels.Contains(Data.LevelNameToId[dataKeeper.CurrentLevelData.Name]):
@@ -219,15 +236,8 @@ public class GameHandler : MonoBehaviour
         {
             try
             {
-                if (SomeoneElseDied)
-                {
-                    SomeoneElseDied = false;
-                    return;
-                }
-
                 if (__instance.IsPaused)
                     return;
-
                 if (PluginMain.ArchipelagoHandler.SlotData.DeathLink)
                     PluginMain.ArchipelagoHandler.SendDeath();
             }
@@ -247,7 +257,7 @@ public class GameHandler : MonoBehaviour
         {
             var tournamentUnlocked = SaveDataHandler.ArchipelagoSaveData.TournamentUnlocked;
             if (SystemHandler.Get<DataKeeper>().Profile.CheckProgress(Enums.ProgressFlag.TournamentDLC))
-                isLocked = tournamentUnlocked;
+                isLocked = !tournamentUnlocked;
             else if (tournamentUnlocked)
                 APConsole.Instance.Log("Warning: You have made an attempt to DLC protection measures. " +
                                        "Please support the devs. They worked hard on this game. Thank you - xMcacutt");

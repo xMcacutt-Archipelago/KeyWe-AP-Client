@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 
 namespace KeyWe_AP_Client;
 
-[BepInPlugin("KeyWeAPClient", "KeyWe AP Client", "1.0")]
+[BepInPlugin("KeyWeAPClient", "KeyWe AP Client", "1.0.4")]
 public class PluginMain : BaseUnityPlugin
 {
     public static LoginMenuHandler LoginHandler;

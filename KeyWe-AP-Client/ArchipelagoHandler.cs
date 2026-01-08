@@ -219,10 +219,16 @@ public class ArchipelagoHandler(string server, int port, string slot, string pas
         }
     }
 
+
+    private static DateTime LastDeathLinkTime = DateTime.Now;
     public void SendDeath()
     {
         var packet = new BouncePacket();
         var now = DateTime.Now;
+
+        if (now - LastDeathLinkTime < TimeSpan.FromSeconds(2))
+            return;
+        
         packet.Tags = ["DeathLink"];
         packet.Data = new Dictionary<string, JToken>
         {
@@ -243,7 +249,8 @@ public class ArchipelagoHandler(string server, int port, string slot, string pas
                 }
             }
         }
-
+        
+        LastDeathLinkTime = now;
         _session.Socket.SendPacket(packet);
     }
 

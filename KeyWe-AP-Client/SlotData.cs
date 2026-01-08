@@ -14,7 +14,7 @@ public class SlotData
     public readonly int RequiredTournamentCompletions;
     public readonly bool TournamentIncluded;
     public readonly bool OvertimeIncluded;
-    public bool DeathLink;
+    public bool DeathLink;  
     public LevelData.Grade GradeCheckThreshold = LevelData.Grade.Bronze;
 
     public SlotData(Dictionary<string, object> slotDict)
