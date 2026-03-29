@@ -9,6 +9,7 @@ using Archipelago.MultiClient.Net.Converters;
 using Archipelago.MultiClient.Net.Enums;
 using Archipelago.MultiClient.Net.Helpers;
 using Archipelago.MultiClient.Net.MessageLog.Messages;
+using Archipelago.MultiClient.Net.MessageLog.Parts;
 using Archipelago.MultiClient.Net.Packets;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
@@ -90,7 +91,7 @@ public class ArchipelagoHandler(string server, int port, string slot, string pas
         _session.Socket.PacketReceived += PacketReceived;
         _session.Items.ItemReceived += ItemReceived;
     }
-
+    
     private void OnSocketClosed(string reason)
     {
         APConsole.Instance.Log($"Connection closed ({reason}) Attempting reconnect...");
@@ -204,9 +205,24 @@ public class ArchipelagoHandler(string server, int port, string slot, string pas
         _session.Socket.SendPacket(packet);
     }
 
-    private static void OnMessageReceived(LogMessage message)
+    private void OnMessageReceived(LogMessage message)
     {
-        APConsole.Instance.Log(message.ToString() ?? string.Empty);
+        string messageStr;
+        if (message.Parts.Any(x => x.Type == MessagePartType.Player) &&
+            PluginMain.FilterLog != null &&
+            PluginMain.FilterLog.Value &&
+            !message.Parts.Any(x => x.Text.Contains(_session!.Players.GetPlayerName(_session.ConnectionInfo.Slot))))
+            return;
+        if (message.Parts.Length == 1)
+            messageStr = message.Parts[0].Text;
+        else
+        {
+            var builder = new StringBuilder();
+            foreach (var part in message.Parts)
+                builder.Append($"{part.Text}");
+            messageStr = builder.ToString();
+        }
+        APConsole.Instance.Log(messageStr);
     }
 
     private void PacketReceived(ArchipelagoPacketBase packet)

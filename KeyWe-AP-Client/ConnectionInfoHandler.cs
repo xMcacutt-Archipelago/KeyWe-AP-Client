@@ -28,6 +28,8 @@ public class ConnectionInfoHandler
 
     public static void Load(ref string server, ref ushort port, ref string slotName, ref string password)
     {
+        if (!File.Exists(path))
+            Save("archipelago.gg", 65535, "Player1", "");
         var json = File.ReadAllText(path);
         var connectionInfo = JsonConvert.DeserializeObject<ConnectionInfo>(json);
         server = connectionInfo.Server;

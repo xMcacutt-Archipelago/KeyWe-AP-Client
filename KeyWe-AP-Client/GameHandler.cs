@@ -139,10 +139,9 @@ public class GameHandler : MonoBehaviour
             kiwi.Customization.InitAll();
             if (PhotonNetwork.IsConnected)
             {
-                var intItemIds = dataKeeper.Profile.GetCustomization(dataKeeper.OnlineSelectedKiwi).IntItemIDs;
                 var localPlayer = PhotonNetwork.LocalPlayer;
                 var propertiesToSet = new Hashtable();
-                propertiesToSet.Add(Properties.Customization, intItemIds);
+                propertiesToSet.Add(Properties.Customization, dataKeeper.Profile.GetCustomization(dataKeeper.OnlineSelectedKiwi).GetItemIDsString());
                 localPlayer.SetCustomProperties(propertiesToSet);
             }
         }

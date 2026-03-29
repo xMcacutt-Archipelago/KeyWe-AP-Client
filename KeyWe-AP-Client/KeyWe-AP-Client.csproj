@@ -1,73 +1,145 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFramework>netstandard2.1</TargetFramework>
-        <AssemblyName>KeyWe_AP_Client</AssemblyName>
-        <Product>KeyWe Archipelago Client</Product>
-        <Version>0.1.0</Version>
-        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <LangVersion>latest</LangVersion>
-        <RootNamespace>KeyWe_AP_Client</RootNamespace>
-    </PropertyGroup>
+<PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Nullable>enable</Nullable>
+    <EnvFilePath>$(MSBuildProjectDirectory)\.env</EnvFilePath>
+    <EnvFileContent Condition="Exists('$(EnvFilePath)')">$([System.IO.File]::ReadAllText('$(EnvFilePath)'))</EnvFileContent>
 
+    <EnvPattern>(?m)^{0}\s*=\s*["']?([^"'\r\n]+)["']?</EnvPattern>
+
+    <STEAM_PATH>$([System.Text.RegularExpressions.Regex]::Match($(EnvFileContent), $([System.String]::Format($(EnvPattern), 'STEAM_PATH'))).Groups[1].Value)</STEAM_PATH>
+    <GAME_NAME>$([System.Text.RegularExpressions.Regex]::Match($(EnvFileContent), $([System.String]::Format($(EnvPattern), 'GAME_NAME'))).Groups[1].Value)</GAME_NAME>
+    <DATA_FOLDER>$([System.Text.RegularExpressions.Regex]::Match($(EnvFileContent), $([System.String]::Format($(EnvPattern), 'DATA_FOLDER'))).Groups[1].Value)</DATA_FOLDER>
+    <GAME_ASSEMBLY_NAME>$([System.Text.RegularExpressions.Regex]::Match($(EnvFileContent), $([System.String]::Format($(EnvPattern), 'ASSEMBLY_NAME'))).Groups[1].Value)</GAME_ASSEMBLY_NAME>
+    <PLUGIN_NAME>$([System.Text.RegularExpressions.Regex]::Match($(EnvFileContent), $([System.String]::Format($(EnvPattern), 'PLUGIN_NAME'))).Groups[1].Value)</PLUGIN_NAME>
+    <PLUGIN_GUID>$([System.Text.RegularExpressions.Regex]::Match($(EnvFileContent), $([System.String]::Format($(EnvPattern), 'PLUGIN_GUID'))).Groups[1].Value)</PLUGIN_GUID>
+    <NESTED_DIRECTORY>$([System.Text.RegularExpressions.Regex]::Match($(EnvFileContent), $([System.String]::Format($(EnvPattern), 'NESTED_DIRECTORY'))).Groups[1].Value)</NESTED_DIRECTORY>
+
+    <STEAM_PATH Condition="'$(STEAM_PATH)' == ''">C:\Program Files (x86)\Steam</STEAM_PATH>
+    <GAME_ASSEMBLY_NAME Condition="'$(GAME_ASSEMBLY_NAME)' == ''">Assembly-CSharp</GAME_ASSEMBLY_NAME>
+
+    <GAME_DIRECTORY>$(STEAM_PATH)\steamapps\common\$(GAME_NAME)</GAME_DIRECTORY>
+    <GAME_DIRECTORY Condition="'$(NESTED_DIRECTORY)' != ''">$(GAME_DIRECTORY)\$(NESTED_DIRECTORY)</GAME_DIRECTORY>
+    <GAME_MANAGED_PATH>$(GAME_DIRECTORY)\$(DATA_FOLDER)\Managed</GAME_MANAGED_PATH>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>KeyWe_AP_Client</AssemblyName>
+    <RootNamespace>KeyWe_AP_Client</RootNamespace>
+</PropertyGroup>
+
+<ItemGroup>
+    <Reference Include="$(GAME_ASSEMBLY_NAME)">
+        <HintPath>$(GAME_MANAGED_PATH)\$(GAME_ASSEMBLY_NAME).dll</HintPath>
+    </Reference>
+    <Reference Include="Photon3Unity3D">
+        <HintPath>$(GAME_MANAGED_PATH)\Photon3Unity3D.dll</HintPath>
+    </Reference>
+    <Reference Include="PhotonRealtime">
+        <HintPath>$(GAME_MANAGED_PATH)\PhotonRealtime.dll</HintPath>
+    </Reference>
+    <Reference Include="PhotonUnityNetworking">
+        <HintPath>$(GAME_MANAGED_PATH)\PhotonUnityNetworking.dll</HintPath>
+    </Reference>
+    <Reference Include="PhotonWebSocket">
+        <HintPath>$(GAME_MANAGED_PATH)\PhotonWebSocket.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+        <HintPath>$(GAME_MANAGED_PATH)\Unity.TextMeshPro.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine">
+        <HintPath>$(GAME_MANAGED_PATH)\UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+        <HintPath>$(GAME_MANAGED_PATH)\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+        <HintPath>$(GAME_MANAGED_PATH)\UnityEngine.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UIElementsModule">
+        <HintPath>$(GAME_MANAGED_PATH)\UnityEngine.UIElementsModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+        <HintPath>$(GAME_MANAGED_PATH)\UnityEngine.UIModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+        <HintPath>$(GAME_MANAGED_PATH)\UnityEngine.InputLegacyModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+        <HintPath>$(GAME_MANAGED_PATH)\UnityEngine.TextRenderingModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.JSONSerializeModule">
+        <HintPath>$(GAME_MANAGED_PATH)\UnityEngine.JSONSerializeModule.dll</HintPath>
+    </Reference>
+    <Publicize Include="$(GAME_ASSEMBLY_NAME)"/>
+    <PackageReference Include="Archipelago.MultiClient.Net" Version="6.7.0"/>
+    <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all"/>
+    <PackageReference Include="BepInEx.Core" Version="5.*"/>
+    <PackageReference Include="Krafs.Publicizer" Version="2.3.0">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <DoNotPublicize Include="Assembly-CSharp:ProfileSelect.OnProfileSelected"/>
+</ItemGroup>
+
+<Target Name="GenerateTemplatePluginInfo" BeforeTargets="BeforeCompile">
+    <WriteLinesToFile
+            File="$(IntermediateOutputPath)GeneratedTemplatePluginInfo.cs"
+            Lines="namespace TemplatePlugin
+{
+    internal static class TemplatePluginInfo
+    {
+        public const string PLUGIN_GUID = &quot;$(PLUGIN_GUID)&quot;%3B
+        public const string PLUGIN_NAME = &quot;$(PLUGIN_NAME)&quot;%3B
+        public const string GAME_NAME = &quot;$(GAME_NAME)&quot;%3B
+    }
+}
+                "
+            Overwrite="true"/>
     <ItemGroup>
-        <PackageReference Include="Archipelago.MultiClient.Net" Version="6.7.0"/>
-        <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all"/>
-        <PackageReference Include="BepInEx.Core" Version="5.*"/>
-        <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*"/>
-        <PackageReference Include="Krafs.Publicizer" Version="2.3.0">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
-        <PackageReference Include="UnityEngine.Modules" Version="2021.3.38.8007589" IncludeAssets="compile"/>
-        <Publicize Include="Assembly-CSharp"/>
-        <DoNotPublicize Include="Assembly-CSharp:ProfileSelect.OnProfileSelected"/>
+        <Compile Include="$(IntermediateOutputPath)GeneratedTemplatePluginInfo.cs"/>
+    </ItemGroup>
+</Target>
+
+<ItemGroup>
+    <ExtraDependencies Include="$(NuGetPackageRoot)archipelago.multiclient.net\6.7.0\lib\netstandard2.0\Archipelago.MultiClient.Net.dll" />
+    <ExtraDependencies Include="$(NuGetPackageRoot)archipelago.multiclient.net\6.7.0\lib\netstandard2.0\Newtonsoft.Json.dll"/>
+    <Folder Include="output\" />
+</ItemGroup>
+
+<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <MakeDir Directories="$(GAME_DIRECTORY)\BepInEx\plugins\$(PLUGIN_NAME)"/>
+    <MakeDir Directories="$(ProjectDir)output"/>
+
+    <Copy
+            SourceFiles="$(TargetPath)"
+            DestinationFolder="$(GAME_DIRECTORY)\BepInEx\plugins\$(PLUGIN_NAME)"
+            OverwriteReadOnlyFiles="true"
+    />
+
+    <Copy
+            SourceFiles="@(ExtraDependencies)"
+            DestinationFolder="$(GAME_DIRECTORY)\BepInEx\plugins\$(PLUGIN_NAME)"
+            OverwriteReadOnlyFiles="true"
+    />
+
+    <Exec Command="powershell -Command &quot;Compress-Archive -Path '$(GAME_DIRECTORY)\BepInEx\plugins\$(PLUGIN_NAME)\*' -DestinationPath '$(ProjectDir)output\$(PLUGIN_NAME).zip' -Force&quot;"/>
+    
+    <ItemGroup>
+        <PluginFiles Include="$(GAME_DIRECTORY)\BepInEx\plugins\$(PLUGIN_NAME)\**\*"/>
     </ItemGroup>
 
-    <ItemGroup>
-      <Reference Include="Assembly-CSharp">
-        <HintPath>F:\SteamLibrary\steamapps\common\KeyWe\KeyWe_Data\Managed\Assembly-CSharp.dll</HintPath>
-      </Reference>
-      <Reference Include="Photon3Unity3D">
-        <HintPath>F:\SteamLibrary\steamapps\common\KeyWe\KeyWe_Data\Managed\Photon3Unity3D.dll</HintPath>
-      </Reference>
-      <Reference Include="PhotonRealtime">
-        <HintPath>F:\SteamLibrary\steamapps\common\KeyWe\KeyWe_Data\Managed\PhotonRealtime.dll</HintPath>
-      </Reference>
-      <Reference Include="PhotonUnityNetworking">
-        <HintPath>F:\SteamLibrary\steamapps\common\KeyWe\KeyWe_Data\Managed\PhotonUnityNetworking.dll</HintPath>
-      </Reference>
-      <Reference Include="PhotonWebSocket">
-        <HintPath>F:\SteamLibrary\steamapps\common\KeyWe\KeyWe_Data\Managed\PhotonWebSocket.dll</HintPath>
-      </Reference>
-      <Reference Include="Unity.TextMeshPro">
-        <HintPath>F:\SteamLibrary\steamapps\common\KeyWe\KeyWe_Data\Managed\Unity.TextMeshPro.dll</HintPath>
-      </Reference>
-      <Reference Include="UnityEngine">
-        <HintPath>F:\SteamLibrary\steamapps\common\KeyWe\KeyWe_Data\Managed\UnityEngine.dll</HintPath>
-      </Reference>
-      <Reference Include="UnityEngine.CoreModule">
-        <HintPath>F:\SteamLibrary\steamapps\common\KeyWe\KeyWe_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
-      </Reference>
-      <Reference Include="UnityEngine.UI">
-        <HintPath>F:\SteamLibrary\steamapps\common\KeyWe\KeyWe_Data\Managed\UnityEngine.UI.dll</HintPath>
-      </Reference>
-    </ItemGroup>
+    <Copy
+            SourceFiles="@(PluginFiles)"
+            DestinationFolder="$(ProjectDir)Package"
+            OverwriteReadOnlyFiles="true"
+    />
 
-    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-        <Copy
-                SourceFiles="$(TargetPath)"
-                DestinationFiles="F:\SteamLibrary\steamapps\common\KeyWe\BepInEx\plugins\KeyWe_AP_Client\$(TargetFileName)" />
-        <MakeDir Directories="$(ProjectDir)Package\KeyWe_Archipelago" />
-        <Copy
-                SourceFiles="$(TargetPath)"
-                DestinationFolder="$(ProjectDir)Package\KeyWe_Archipelago"
-                OverwriteReadOnlyFiles="true" />
-        <Copy
-                SourceFiles="$(ProjectDir)../README.md"
-                DestinationFolder="$(ProjectDir)Package"
-                OverwriteReadOnlyFiles="true" />
-        <Exec Command="powershell -Command &quot;Compress-Archive -Path '$(ProjectDir)Package\*' -DestinationPath '$(ProjectDir)xMcacutt-KeyWe_Archipelago.zip' -Force&quot;" />
-    </Target>
+    <Copy
+            SourceFiles="$(ProjectDir)..\README.md"
+            DestinationFolder="$(ProjectDir)Package"
+            OverwriteReadOnlyFiles="true"
+    />
 
+    <Exec Command="powershell -Command &quot;Compress-Archive -Path '$(ProjectDir)Package\*' -DestinationPath '$(ProjectDir)output\xMcacutt-$(PLUGIN_NAME)_TS.zip' -Force&quot;"/>
+</Target>
 </Project>
