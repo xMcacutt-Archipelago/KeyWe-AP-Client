@@ -38,11 +38,11 @@ public class LocationHandler
                     if (levelValid)
                     {
                         PluginMain.ArchipelagoHandler.CheckLocation(0x100 + 0x10 * id + 0x0);
-                        if (info.ChallengesCompleted is { Length: > 0 })
-                            PluginMain.ArchipelagoHandler.CheckLocation(0x100 + 0x10 * id + 0xB);
                         SaveDataHandler.ArchipelagoSaveData.LevelCompletions[id] = true;
                     }
                 }
+                if (info.ChallengesCompleted is { Length: > 0 })
+                    PluginMain.ArchipelagoHandler.CheckLocation(0x100 + 0x10 * id + 0xB);
             }
 
             reward = 0;
@@ -84,6 +84,11 @@ public class LocationHandler
             if (grade < PluginMain.ArchipelagoHandler.SlotData.GradeCheckThreshold)
             {
                 grade = LevelData.Grade.Failed;
+                if (Data.OvertimeLevelNameToId.TryGetValue(levelData.Name, out var id))
+                {
+                    if (info.ChallengesCompleted is { Length: > 0 })
+                        PluginMain.ArchipelagoHandler.CheckLocation(0x400 + 0x4 * id + 0x2);
+                }
             }
             else
             {
@@ -95,6 +100,8 @@ public class LocationHandler
                     SaveDataHandler.ArchipelagoSaveData.OvertimeLevelCompletions[id] = true;
                 }
             }
+            
+
 
             reward = 0;
             challengeReward = 0;
@@ -110,8 +117,8 @@ public class LocationHandler
                 if (var >= (double)__instance.OvertimeShifts.WearableUnlockThreshold &&
                     !__instance.Profile.IsUnlocked(levelData.WearableCategory, 0, (ushort)levelData.WearableID))
                 {
-                    if (Data.OvertimeLevelNameToId.TryGetValue(levelData.Name, out var id))
-                        PluginMain.ArchipelagoHandler.CheckLocation(0x400 + 0x4 * id + 0x1);
+                    if (Data.OvertimeLevelNameToId.TryGetValue(levelData.Name, out var overtimeId))
+                        PluginMain.ArchipelagoHandler.CheckLocation(0x400 + 0x4 * overtimeId + 0x1);
                     Utility.UnsignedClamp(ref var, __instance.OvertimeShifts.WearableUnlockThreshold);
                     __instance.Profile.AddNotification(Notification.Type.NewWardrobeItem,
                         (int)levelData.WearableCategory, (int)levelData.WearableID);
