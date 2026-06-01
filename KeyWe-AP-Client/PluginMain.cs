@@ -12,7 +12,7 @@ namespace KeyWe_AP_Client;
 public class PluginMain : BaseUnityPlugin
 {
     public const string GameName = TemplatePluginInfo.GAME_NAME;
-    private const string Version = "1.1.0";
+    private const string Version = "1.1.1";
     public static ConfigEntry<bool>? EnableDebugLogging;
     public static ConfigEntry<bool>? FilterLog;
     public static ConfigEntry<float>? MessageInTime;
