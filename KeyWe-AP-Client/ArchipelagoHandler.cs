@@ -308,10 +308,14 @@ public class ArchipelagoHandler(string server, int port, string slot, string pas
             return true;
         if (Enumerable.Range(0, 9)
             .Any(week =>
-                Enumerable.Range(0, 4)
-                    .Count(day => SaveDataHandler.ArchipelagoSaveData.LevelCompletions[week * 4 + day])
-                < PluginMain.ArchipelagoHandler.SlotData.RequiredLevelCompletionsPerWeek
-            ))
+            {
+                var requiredCompletions = PluginMain.ArchipelagoHandler.SlotData.RequiredLevelCompletionsPerWeek;
+                if (week == 8)
+                    requiredCompletions = Math.Min(requiredCompletions, 3);
+                var completed = Enumerable.Range(0, 4)
+                    .Count(day => SaveDataHandler.ArchipelagoSaveData.LevelCompletions[week * 4 + day]);
+                return completed < requiredCompletions;
+            }))
             return true;
         if (SaveDataHandler.ArchipelagoSaveData.Collectibles.Count(x => x.Value)
             < PluginMain.ArchipelagoHandler.SlotData.RequiredCollectibles)
@@ -331,9 +335,14 @@ public class ArchipelagoHandler(string server, int port, string slot, string pas
         var levelGoalsReq = PluginMain.ArchipelagoHandler.SlotData.RequiredLevelCompletions;
         var weekGoalsDone = Enumerable.Range(0, 9)
             .Count(week =>
-                Enumerable.Range(0, 4)
-                    .Count(day => SaveDataHandler.ArchipelagoSaveData.LevelCompletions[week * 4 + day])
-                >= PluginMain.ArchipelagoHandler.SlotData.RequiredLevelCompletionsPerWeek
+                {
+                    var requiredCompletions = PluginMain.ArchipelagoHandler.SlotData.RequiredLevelCompletionsPerWeek;
+                    if (week == 8)
+                        requiredCompletions = Math.Min(requiredCompletions, 3);
+                    var completed = Enumerable.Range(0, 4)
+                        .Count(day => SaveDataHandler.ArchipelagoSaveData.LevelCompletions[week * 4 + day]);
+                    return requiredCompletions <= completed;
+                }
             );
         var colsCollected = SaveDataHandler.ArchipelagoSaveData.Collectibles.Count(x => x.Value);
         var colsReq = PluginMain.ArchipelagoHandler.SlotData.RequiredCollectibles;
